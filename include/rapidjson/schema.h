@@ -1347,7 +1347,7 @@ public:
         schemaRef_(allocator, kInitialSchemaRefSize)
     {
         if (!allocator_)
-            ownAllocator_ = allocator_ = RAPIDJSON_NEW(Allocator());
+            ownAllocator_ = allocator_ = RAPIDJSON_NEW(Allocator)();
 
         // Generate root schema, it will call CreateSchema() to create sub-schemas,
         // And call AddRefSchema() if there are $ref.
@@ -1805,7 +1805,7 @@ private:
 
     StateAllocator& GetStateAllocator() {
         if (!stateAllocator_)
-            stateAllocator_ = ownStateAllocator_ = RAPIDJSON_NEW(StateAllocator());
+            stateAllocator_ = ownStateAllocator_ = RAPIDJSON_NEW(StateAllocator)();
         return *stateAllocator_;
     }
 
