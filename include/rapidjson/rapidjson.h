@@ -579,34 +579,6 @@ RAPIDJSON_NAMESPACE_END
 //!@endcond
 
 ///////////////////////////////////////////////////////////////////////////////
-// malloc/realloc/free
-
-#ifndef RAPIDJSON_MALLOC
-///! customization point for global \c malloc
-#define RAPIDJSON_MALLOC(size) std::malloc(size)
-#endif
-#ifndef RAPIDJSON_REALLOC
-///! customization point for global \c realloc
-#define RAPIDJSON_REALLOC(ptr, new_size) std::realloc(ptr, new_size)
-#endif
-#ifndef RAPIDJSON_FREE
-///! customization point for global \c free
-#define RAPIDJSON_FREE(ptr) std::free(ptr)
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-// new/delete
-
-#ifndef RAPIDJSON_NEW
-///! customization point for global \c new
-#define RAPIDJSON_NEW(TypeName) new TypeName
-#endif
-#ifndef RAPIDJSON_DELETE
-///! customization point for global \c delete
-#define RAPIDJSON_DELETE(x) delete x
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
 // Type
 
 /*! \namespace rapidjson

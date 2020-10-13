@@ -19,6 +19,47 @@
 
 RAPIDJSON_NAMESPACE_BEGIN
 
+typedef void* (__cdecl* RapidJsonMemAllocFunction)(size_t size);
+typedef void (__cdecl* RapidJsonMemFreeFunction)(void* pointer);
+
+extern RapidJsonMemAllocFunction g_pRapidJsonMemAllocHook;
+extern RapidJsonMemFreeFunction g_pRapidJsonMemFreeHook;
+
+void* __cdecl RapidJsonDefaultAlloc(size_t size) noexcept;
+void __cdecl RapidJsonDefaultFree(void* pointer) noexcept;
+
+inline void* __cdecl rapidjson_alloc(size_t size) noexcept
+{
+    return g_pRapidJsonMemAllocHook(size);
+}
+
+inline void __cdecl rapidjson_free(void* pointer) noexcept
+{
+    g_pRapidJsonMemFreeHook(pointer);
+}
+
+inline void* rapidjson_allocate(size_t size)
+{
+    void* p = rapidjson_alloc(size);
+    if (p == nullptr)
+    {
+        throw std::bad_alloc();
+    }
+    return p;
+}
+
+inline void rapidjson_delete(void * p)
+{
+    rapidjson_free(p);
+}
+
+template<typename T, class... TArgs>
+inline T* RapidJsonMake(TArgs&&... args)
+{
+    auto mem = rapidjson_alloc(sizeof(T));
+    return new (mem) T(std::forward<TArgs>(args)...);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Allocator
 
@@ -64,19 +105,36 @@ public:
     static const bool kNeedFree = true;
     void* Malloc(size_t size) { 
         if (size) //  behavior of malloc(0) is implementation defined.
-            return RAPIDJSON_MALLOC(size);
+            return rapidjson_alloc(size);
         else
             return NULL; // standardize to returning NULL.
     }
     void* Realloc(void* originalPtr, size_t originalSize, size_t newSize) {
         (void)originalSize;
         if (newSize == 0) {
-            RAPIDJSON_FREE(originalPtr);
+            rapidjson_free(originalPtr);
             return NULL;
         }
-        return RAPIDJSON_REALLOC(originalPtr, newSize);
+
+        if (originalPtr == nullptr)
+        {
+            return rapidjson_alloc(newSize);
+        }
+        else
+        {
+            if (newSize > originalSize)
+            {
+                void* newPtr = rapidjson_alloc(newSize);
+                std::memcpy(newPtr, originalPtr, originalSize);
+                return newPtr;
+            }
+            else
+            {
+                return originalPtr;
+            }
+        }
     }
-    static void Free(void *ptr) { RAPIDJSON_FREE(ptr); }
+    static void Free(void *ptr) { rapidjson_free(ptr); }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -138,7 +196,7 @@ public:
     */
     ~MemoryPoolAllocator() {
         Clear();
-        RAPIDJSON_DELETE(ownBaseAllocator_);
+        rapidjson_delete(ownBaseAllocator_);
     }
 
     //! Deallocates all memory chunks, excluding the user-supplied buffer.
@@ -236,7 +294,7 @@ private:
     */
     bool AddChunk(size_t capacity) {
         if (!baseAllocator_)
-            ownBaseAllocator_ = baseAllocator_ = RAPIDJSON_NEW(BaseAllocator)();
+            ownBaseAllocator_ = baseAllocator_ = RapidJsonMake<BaseAllocator>();
         if (ChunkHeader* chunk = reinterpret_cast<ChunkHeader*>(baseAllocator_->Malloc(RAPIDJSON_ALIGN(sizeof(ChunkHeader)) + capacity))) {
             chunk->capacity = capacity;
             chunk->size = 0;
