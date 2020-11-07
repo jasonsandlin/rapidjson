@@ -29,6 +29,9 @@ void __cdecl RapidJsonDefaultFree(void* pointer) noexcept
     free(pointer);
 }
 
+typedef void* (__cdecl* RapidJsonMemAllocFunction)(size_t size);
+typedef void(__cdecl* RapidJsonMemFreeFunction)(void* pointer);
+
 RapidJsonMemAllocFunction g_pRapidJsonMemAllocHook{ RapidJsonDefaultAlloc };
 RapidJsonMemFreeFunction g_pRapidJsonMemFreeHook{ RapidJsonDefaultFree };
 
